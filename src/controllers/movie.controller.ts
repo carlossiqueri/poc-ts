@@ -2,9 +2,8 @@ import { Request, Response } from "express";
 import { Movie } from "../protocols";
 import * as movieService from "../services/movies.services";
 import httpStatus from "http-status";
-import { db } from "../database/database.config";
 
-export async function createMovie(req: Request, res: Response){
+export async function createMovie(req: Request, res: Response): Promise<void> {
   const createdMovie = req.body as Movie;
   try {
     await movieService.createMovie(createdMovie);
@@ -16,15 +15,33 @@ export async function createMovie(req: Request, res: Response){
   }
 }
 
-export async function getMovies(req: Request, res: Response) {
-    try{
-        const result = await db.query(`SELECT * FROM movies`);
-        res.status(200).send(result);
-    }catch(err){
-        res.sendStatus(500)
-    }
+export async function getMovies(req: Request, res: Response): Promise<void> {
+  try {
+    const allMovies = await movieService.getMovies();
+    res.status(httpStatus.OK).send(allMovies.rows);
+  } catch (err) {
+    res.status(httpStatus.INTERNAL_SERVER_ERROR).send(err.message);
+  }
 }
 
-export function updateMovies(req: Request, res: Response) {}
+export async function updateMovies(req: Request, res: Response): Promise<void> {
+  const { status, id } = req.body as Movie;
+  try {
+    await movieService.updateMovies(status, id);
 
-export function deleteMovie(req: Request, res: Response) {}
+    res.sendStatus(httpStatus.CREATED);
+  } catch (err) {
+    res.status(httpStatus.INTERNAL_SERVER_ERROR).send(err.message);
+  }
+}
+
+export async function deleteMovie(req: Request, res: Response): Promise<void> {
+  const id = req.body.id;
+
+  try {
+    await movieService.deleteMovie(id);
+    res.sendStatus(httpStatus.NO_CONTENT);
+  } catch (err) {
+    res.status(httpStatus.INTERNAL_SERVER_ERROR).send(err.message);
+  }
+}
